@@ -1,2 +1,228 @@
-Add The Credentials In Main App, 
-Then Install The Verification App in your phone to verify the teachers.
+# Ilmify — Connecting Students with Teachers
+
+> A Flutter mobile application that bridges students and home tutors, with a companion admin panel for teacher identity verification.
+
+---
+
+## Overview
+
+Ilmify is a two-sided marketplace for private tutoring. Students post their subject and scheduling requirements; teachers browse and send connection requests. Once both sides agree, they can chat directly inside the app. A separate Flutter web/desktop admin panel lets moderators review and approve teacher identity documents before teachers can appear in search results.
+
+---
+
+## Repositories / Projects
+
+| Project | Description |
+|---|---|
+| `Main_APP` | Student & Teacher mobile app (Flutter / Android / iOS) |
+| `lib_Verify` | Admin verification panel (Flutter) |
+
+---
+
+## Features
+
+### Student App
+- Role-based onboarding — choose **Student** or **Teacher** at first launch
+- Email/password and **Google Sign-In** authentication (Firebase Auth)
+- Multi-step profile setup: basic info → subjects → pricing → siblings → location
+- Browse and filter available teachers
+- Send / manage connection requests
+- Real-time **chat** with connected teachers
+- Push notifications via **OneSignal** (new messages, request updates)
+- Account management and profile picture upload
+
+### Teacher App
+- Same authentication flow as the student side
+- Multi-step profile setup: basic info → subjects → degrees → experience → pricing → location
+- **Identity verification flow** (3-step): full name, CNIC, date of birth → degree documents → face photo
+- Browse connected students, manage incoming requests
+- Real-time chat with connected students
+- Verified badge displayed after admin approval
+
+### Admin Verification Panel (`lib_Verify`)
+- Secure admin login (Firebase Auth)
+- Real-time dashboard of pending teacher verifications
+- Filter by status: **Pending / Approved / Rejected / All**
+- Review submitted documents and approve or reject with one tap
+- Live listener — dashboard updates automatically when new submissions arrive
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Flutter (Dart) |
+| Authentication | Firebase Auth (email + Google Sign-In) |
+| Database | Firebase Realtime Database |
+| Push Notifications | OneSignal Flutter SDK |
+| Storage | Firebase Storage (profile & document images) |
+| Local Preferences | `shared_preferences` |
+| Permissions | `permission_handler` |
+
+---
+
+## Project Structure
+
+### Main App (`lib/`)
+
+```
+lib/
+├── main.dart                          # App entry point, Firebase + OneSignal init
+├── screens/
+│   ├── start_screen.dart              # Role selection (Student / Teacher)
+│   ├── splash_screen.dart
+│   ├── privacy_screen.dart
+│   ├── notification_service.dart      # OneSignal token linking / unlink on logout
+│   ├── authentication/
+│   │   ├── login_screen.dart
+│   │   └── signup_screen.dart
+│   ├── info_collector/                # Multi-step profile setup
+│   │   ├── info_student.dart
+│   │   ├── info_teacher.dart
+│   │   ├── steps_student/             # step1–step5 (basic info → location)
+│   │   └── steps_teacher/             # step1–step6 (basic info → location)
+│   └── home/
+│       ├── student/
+│       │   ├── home_student.dart
+│       │   ├── teachers_list_student.dart
+│       │   ├── student_teacher_info.dart
+│       │   ├── requests_student.dart
+│       │   ├── account_page_student.dart
+│       │   └── chat/
+│       │       ├── student_chat_list.dart
+│       │       ├── student_teacher_chat.dart
+│       │       ├── student_teacher_chat_individual.dart
+│       │       ├── teacher_chat_info.dart
+│       │       └── teacher_info_location.dart
+│       └── teacher/
+│           ├── home_teacher.dart
+│           ├── student_list_teacher.dart
+│           ├── requests_teacher.dart
+│           ├── teacher_request_student_info.dart
+│           ├── account_page_teacher.dart
+│           ├── verification_teacher.dart
+│           ├── verification/
+│           │   ├── ver1_teacher.dart   # Step 1 — Personal details (name, CNIC, DOB)
+│           │   ├── ver2_teacher.dart   # Step 2 — Degree documents
+│           │   └── ver3_teacher.dart   # Step 3 — Face photo
+│           └── chat/
+│               ├── teacher_chat_list.dart
+│               ├── teacher_student_chat.dart
+│               ├── student_chat_info.dart
+│               └── student_info_location.dart
+```
+
+### Admin Panel (`lib/`)
+
+```
+lib/
+├── main.dart                # Admin app entry point
+├── admin_login.dart         # Admin sign-in screen
+├── admin_home.dart          # Verification dashboard with real-time listener
+└── verification_detail.dart # Document review + approve / reject actions
+```
+
+---
+
+## Firebase Database Structure
+
+```
+/students/{emailKey}/          — Student profiles + OneSignal token
+/teachers/{emailKey}/          — Teacher profiles + OneSignal token
+/studentRequests/{emailKey}/   — Requests received by a student
+/pending_verifications/        — Teacher identity submissions (reviewed by admin)
+```
+
+> Email keys are generated by replacing `.` with `_` and `@` with `_at_`.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Flutter SDK ≥ 3.x
+- A Firebase project with **Authentication**, **Realtime Database**, and **Storage** enabled
+- A [OneSignal](https://onesignal.com) account and App ID
+- `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) placed in the correct platform directories
+
+### Installation
+
+```bash
+# Clone the repo
+git clone https://github.com/your-org/ilmify.git
+cd ilmify
+
+# Install dependencies
+flutter pub get
+```
+
+### Configuration
+
+1. **Firebase** — Add your `google-services.json` to `android/app/` and `GoogleService-Info.plist` to `ios/Runner/`.
+
+2. **OneSignal** — Open `lib/main.dart` and replace the placeholder with your real App ID:
+   ```dart
+   const _kOneSignalAppId = 'your-onesignal-app-id';
+   ```
+
+3. **Google Sign-In** — Update the `clientId` in `login_screen.dart` and `signup_screen.dart` with your OAuth 2.0 client ID from the Google Cloud Console.
+
+### Run
+
+```bash
+# Main app
+flutter run
+
+# Admin verification panel (separate Flutter project inside lib_Verify/)
+cd lib_Verify
+flutter pub get
+flutter run
+```
+
+---
+
+## Push Notifications
+
+Ilmify uses **OneSignal** for push delivery on top of Firebase Cloud Messaging (FCM).
+
+- `NotificationService.linkUser()` — call after every login/signup to bind the Firebase UID to OneSignal and save the subscription ID to the database.
+- `NotificationService.unlinkUser()` — call on logout to detach the token.
+- Battery optimization exemption is requested at startup to ensure delivery on Android OEM skins (MIUI, ColorOS, OneUI).
+
+Supported notification types:
+
+| `type` value | Trigger |
+|---|---|
+| `new_student` | A new student signed up nearby |
+| `received_request` | Teacher received a connection request |
+| `request_accepted` | Student's request was accepted |
+| `request_rejected` | Student's request was rejected |
+| `chat_message` | New chat message received |
+
+---
+
+## Teacher Verification Flow
+
+1. Teacher completes their profile and initiates verification from the account page.
+2. A 3-step in-app form collects: personal details (name, CNIC, date of birth) → degree document photos → a face photo.
+3. The submission is written to `/pending_verifications/` in Firebase.
+4. An admin opens the **lib_Verify** panel, reviews the documents, and approves or rejects the submission.
+5. Upon approval the teacher's profile is flagged as verified and they appear in student search results.
+
+---
+
+## Contributing
+
+1. Fork the repository and create a feature branch (`git checkout -b feature/my-feature`).
+2. Commit your changes with clear messages.
+3. Open a pull request describing what you changed and why.
+
+Please follow the existing code style and keep business logic out of widget `build` methods.
+
+---
+
+## License
+
+This project is proprietary. All rights reserved.
