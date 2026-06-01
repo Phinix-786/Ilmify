@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification color - matches your app theme -->
+    <color name="notification_color">#FF8B4513</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
+    
+    <!-- Splash screen background - cream color -->
+    <color name="splash_background">#FFF8E7</color>
+</resources>
